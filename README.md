@@ -1,2 +1,2 @@
-# ga2022
-RPI Game Architecture 2022
+# Insight
+Game Architecture student engine
