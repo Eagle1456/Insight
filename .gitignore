@@ -50,3 +50,10 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+*.log
+*.tlog
+*.exe
+*.recipe
+*.vs
+*.user

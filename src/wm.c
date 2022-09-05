@@ -107,11 +107,16 @@ static LRESULT CALLBACK _window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM
 			break;
 
 		case WM_ACTIVATEAPP:
-			ShowCursor(!wParam);
+			ShowCursor(wParam);
 			win->has_focus = wParam;
 			break;
 
 		case WM_CLOSE:
+			/* Testing message box
+			if (MessageBox(hwnd, L"Are you sure you want to quit?", L"Insight", MB_OKCANCEL) == IDOK) {
+				win->quit = true;
+			}*/
+
 			win->quit = true;
 			break;
 		}
@@ -133,7 +138,7 @@ wm_window_t* wm_create()
 	HWND hwnd = CreateWindowEx(
 		0,
 		wc.lpszClassName,
-		L"GA 2022",
+		L"Insight",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
