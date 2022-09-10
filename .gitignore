@@ -51,9 +51,13 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-*.log
+# Visual Studio junk
 *.tlog
-*.exe
+*.log
 *.recipe
-*.vs
+*.filters
 *.user
+*.lastbuildstate
+*.ipch
+*.suo
+*.db
