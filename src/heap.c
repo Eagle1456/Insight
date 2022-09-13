@@ -8,6 +8,9 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <dbghelp.h>
+
+#define STACK_COUNT 50
 
 typedef struct arena_t
 {
@@ -18,8 +21,9 @@ typedef struct arena_t
 typedef struct memblock_t
 {
 	void *address;
-	PVOID backtrace;
+	PVOID *backtrace;
 	size_t block_size;
+	USHORT num_frames;
 	struct memblock_t *next;
 } memblock_t;
 
@@ -87,9 +91,10 @@ void *heap_alloc(heap_t *heap, size_t size, size_t alignment)
 	
 	memblock->address = address;
 	memblock->block_size = tlsf_block_size(address);
-	memblock->backtrace = VirtualAlloc(NULL, 20 * sizeof(PVOID), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	memblock->backtrace = VirtualAlloc(NULL, STACK_COUNT * sizeof(PVOID), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+
 	// Start capturing the stack backtrace to the frame before this one
-	CaptureStackBackTrace(1, 20, memblock->backtrace, NULL);
+	memblock->num_frames = CaptureStackBackTrace(1, STACK_COUNT, memblock->backtrace, NULL);
 
 	memblock->next = heap->last_block;
 	heap->last_block = memblock;
@@ -118,30 +123,57 @@ void heap_free(heap_t *heap, void *address)
 			current_block = current_block->next;
 		}
 	}
+	debug_print(k_print_warning, "Address to free not found!\n");
 }
 
-void heap_destroy(heap_t *heap)
+void heap_destroy(heap_t* heap)
 {
 	tlsf_destroy(heap->tlsf);
 
-	arena_t *arena = heap->arena;
+	arena_t* arena = heap->arena;
 	while (arena)
 	{
-		arena_t *next = arena->next;
+		arena_t* next = arena->next;
 		VirtualFree(arena, 0, MEM_RELEASE);
 		arena = next;
 	}
-
-	memblock_t *block = heap->last_block;
-
-	while (block)
-	{
-		size_t current_size = tlsf_block_size(block->address);
-		printf("Memory leak of size %u bytes\n", (unsigned int)current_size);
-		memblock_t *next = block->next;
-		VirtualFree(block, 0, MEM_RELEASE);
-		block = next;
+	
+	if (heap->last_block) {
+		SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS | SYMOPT_LOAD_LINES);
+		HANDLE handle = GetCurrentProcess();
+		SymInitialize(handle, NULL, TRUE);
+		PIMAGEHLP_SYMBOL symbol = VirtualAlloc(NULL, sizeof(IMAGEHLP_SYMBOL64) + 255 * sizeof(TCHAR), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+		if (symbol) {
+			symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
+			symbol->MaxNameLength = 256;
+		}
+		memblock_t* block = heap->last_block;
+	
+		while (block)
+		{
+			debug_print(k_print_warning, "Memory leak of size %u bytes\n", (unsigned int)block->block_size);
+			if (symbol) {
+				size_t frames = block->num_frames;
+				for (size_t i = 0; i < frames; i++) {
+					DWORD64 addr = (DWORD64)*(block->backtrace + i);
+					if (SymGetSymFromAddr64(handle, addr, 0, symbol)) {
+						debug_print(k_print_warning, "[%u] %s\n", (unsigned)frames - i - 1, symbol->Name);
+					}
+					if (strncmp(symbol->Name, "main", 5) == 0) {
+						break;
+					}
+				}
+			}
+		
+			memblock_t* next = block->next;
+			VirtualFree(block, 0, MEM_RELEASE);
+			block = next;
+		}
+		VirtualFree(symbol, 0, MEM_RELEASE);
+		SymCleanup(handle);
 	}
 
 	VirtualFree(heap, 0, MEM_RELEASE);
+
+	
 }

@@ -109,16 +109,11 @@ static LRESULT CALLBACK _window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM
 			break;
 
 		case WM_ACTIVATEAPP:
-			ShowCursor(wParam);
-			win->has_focus = wParam;
+			ShowCursor(wParam != 0);
+			win->has_focus = (wParam != 0);
 			break;
 
 		case WM_CLOSE:
-			/* Testing message box
-			if (MessageBox(hwnd, L"Are you sure you want to quit?", L"Insight", MB_OKCANCEL) == IDOK) {
-				win->quit = true;
-			}*/
-
 			win->quit = true;
 			break;
 		}
