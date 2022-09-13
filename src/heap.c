@@ -12,20 +12,29 @@
 typedef struct arena_t
 {
 	pool_t pool;
-	struct arena_t* next;
+	struct arena_t *next;
 } arena_t;
+
+typedef struct memblock_t
+{
+	void *address;
+	PVOID backtrace;
+	size_t block_size;
+	struct memblock_t *next;
+} memblock_t;
 
 typedef struct heap_t
 {
 	tlsf_t tlsf;
 	size_t grow_increment;
-	arena_t* arena;
+	arena_t *arena;
+	memblock_t *last_block;
 } heap_t;
 
-heap_t* heap_create(size_t grow_increment)
+heap_t *heap_create(size_t grow_increment)
 {
-	heap_t* heap = VirtualAlloc(NULL, sizeof(heap_t) + tlsf_size(),
-		MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	heap_t *heap = VirtualAlloc(NULL, sizeof(heap_t) + tlsf_size(),
+								MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	if (!heap)
 	{
 		debug_print(
@@ -37,21 +46,21 @@ heap_t* heap_create(size_t grow_increment)
 	heap->grow_increment = grow_increment;
 	heap->tlsf = tlsf_create(heap + 1);
 	heap->arena = NULL;
-
+	heap->last_block = NULL;
 	return heap;
 }
 
-void* heap_alloc(heap_t* heap, size_t size, size_t alignment)
+void *heap_alloc(heap_t *heap, size_t size, size_t alignment)
 {
-	void* address = tlsf_memalign(heap->tlsf, alignment, size);
+	void *address = tlsf_memalign(heap->tlsf, alignment, size);
 	if (!address)
 	{
 		size_t arena_size =
 			__max(heap->grow_increment, size * 2) +
 			sizeof(arena_t);
-		arena_t* arena = VirtualAlloc(NULL,
-			arena_size + tlsf_pool_overhead(),
-			MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+		arena_t *arena = VirtualAlloc(NULL,
+									  arena_size + tlsf_pool_overhead(),
+									  MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 		if (!arena)
 		{
 			debug_print(
@@ -67,24 +76,71 @@ void* heap_alloc(heap_t* heap, size_t size, size_t alignment)
 
 		address = tlsf_memalign(heap->tlsf, alignment, size);
 	}
+	memblock_t *memblock = VirtualAlloc(NULL,
+								  sizeof(memblock_t), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	if (!memblock)
+	{
+		debug_print(k_print_error, "Tried to capture stack trace but ran out of memory...\n");
+		return address;
+	}
+
+	
+	memblock->address = address;
+	memblock->block_size = tlsf_block_size(address);
+	memblock->backtrace = VirtualAlloc(NULL, 20 * sizeof(PVOID), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	// Start capturing the stack backtrace to the frame before this one
+	CaptureStackBackTrace(1, 20, memblock->backtrace, NULL);
+
+	memblock->next = heap->last_block;
+	heap->last_block = memblock;
 	return address;
 }
 
-void heap_free(heap_t* heap, void* address)
+void heap_free(heap_t *heap, void *address)
 {
 	tlsf_free(heap->tlsf, address);
+	memblock_t *current_block = heap->last_block;
+	memblock_t* last_block = NULL;
+	while (current_block) {
+		if (address == current_block->address) {
+			VirtualFree(current_block->backtrace, 0, MEM_RELEASE);
+			if (!last_block) {
+				heap->last_block = current_block->next;
+			}
+			else {
+				last_block->next = current_block->next;
+			}
+			VirtualFree(current_block, 0, MEM_RELEASE);
+			return;
+		}
+		else {
+			last_block = current_block;
+			current_block = current_block->next;
+		}
+	}
 }
 
-void heap_destroy(heap_t* heap)
+void heap_destroy(heap_t *heap)
 {
 	tlsf_destroy(heap->tlsf);
 
-	arena_t* arena = heap->arena;
+	arena_t *arena = heap->arena;
 	while (arena)
 	{
-		arena_t* next = arena->next;
+		arena_t *next = arena->next;
 		VirtualFree(arena, 0, MEM_RELEASE);
 		arena = next;
+	}
+
+	memblock_t *block = heap->last_block;
+
+	while (block)
+	{
+		size_t current_size = tlsf_block_size(block->address);
+		printf("Memory leak of size %u bytes\n", (unsigned int)current_size);
+		memblock_t *next = block->next;
+		VirtualFree(block, 0, MEM_RELEASE);
+		block = next;
 	}
 
 	VirtualFree(heap, 0, MEM_RELEASE);
