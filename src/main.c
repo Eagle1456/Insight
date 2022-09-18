@@ -8,15 +8,13 @@
 
 static void homework1_test();
 
-void heap_test();
-
 int main(int argc, const char* argv[])
 {
 	debug_install_exception_handler();
 
-	heap_test();
+	homework1_test();
 
-	/*debug_set_print_mask(k_print_warning | k_print_error);
+	debug_set_print_mask(k_print_warning | k_print_error);
 
 	heap_t* heap = heap_create(2 * 1024 * 1024);
 	wm_window_t* window = wm_create(heap);
@@ -37,7 +35,7 @@ int main(int argc, const char* argv[])
 	}
 
 	wm_destroy(window);
-	heap_destroy(heap);*/
+	heap_destroy(heap);
 
 	return 0;
 }
@@ -67,11 +65,3 @@ static void homework1_test()
 	heap_destroy(heap);
 }
 
-void heap_test()
-{
-	heap_t* heap = heap_create(4096);
-	void* leak = heap_alloc(heap, 100, 8);
-	void* not_leak = heap_alloc(heap, 200, 8);
-	heap_free(heap, not_leak);
-	heap_destroy(heap);
-}

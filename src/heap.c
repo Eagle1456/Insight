@@ -159,9 +159,6 @@ void heap_destroy(heap_t* heap)
 					if (SymGetSymFromAddr64(handle, addr, 0, symbol)) {
 						debug_print(k_print_warning, "[%u] %s\n", (unsigned)frames - i - 1, symbol->Name);
 					}
-					if (strncmp(symbol->Name, "main", 5) == 0) {
-						break;
-					}
 				}
 			}
 		
@@ -169,7 +166,7 @@ void heap_destroy(heap_t* heap)
 			VirtualFree(block, 0, MEM_RELEASE);
 			block = next;
 		}
-		VirtualFree(symbol, 0, MEM_RELEASE);
+		if (symbol) VirtualFree(symbol, 0, MEM_RELEASE);
 		SymCleanup(handle);
 	}
 
