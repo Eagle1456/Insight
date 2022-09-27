@@ -128,6 +128,7 @@ void heap_free(heap_t *heap, void *address)
 				last_block->next = current_block->next;
 			}
 			VirtualFree(current_block, 0, MEM_RELEASE);
+			mutex_unlock(heap->mutex);
 			return;
 		}
 		else
