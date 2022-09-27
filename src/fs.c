@@ -14,7 +14,9 @@ typedef struct fs_t
 {
 	heap_t* heap;
 	queue_t* file_queue;
+	queue_t* compression_queue;
 	thread_t* file_thread;
+	thread_t* compression_thread;
 } fs_t;
 
 typedef enum fs_work_op_t
@@ -37,13 +39,16 @@ typedef struct fs_work_t
 } fs_work_t;
 
 static int file_thread_func(void* user);
+static int compress_thread_func(void* user);
 
 fs_t* fs_create(heap_t* heap, int queue_capacity)
 {
 	fs_t* fs = heap_alloc(heap, sizeof(fs_t), 8);
 	fs->heap = heap;
 	fs->file_queue = queue_create(heap, queue_capacity);
+	fs->compression_queue = queue_create(heap, queue_capacity);
 	fs->file_thread = thread_create(file_thread_func, fs);
+	fs->compression_thread = thread_create(compress_thread_func, fs);
 	return fs;
 }
 
@@ -243,4 +248,11 @@ static int file_thread_func(void* user)
 		}
 	}
 	return 0;
+}
+
+static int compress_thread_func(void* user) {
+	fs_t* fs = user;
+	while (true) {
+
+	}
 }
