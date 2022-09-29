@@ -144,11 +144,14 @@ void fs_work_destroy(fs_work_t* work)
 	{
 		event_wait(work->done);
 		event_destroy(work->done);
+		if (work->use_compression && work->op == k_fs_work_op_write) {
+			heap_free(work->heap, work->buffer);
+		}
 		heap_free(work->heap, work);
 	}
 }
 
-static void file_read(fs_work_t* work, fs_t* fs)
+static void file_read(fs_work_t* work, queue_t* queue)
 {
 	wchar_t wide_path[1024];
 	if (MultiByteToWideChar(CP_UTF8, 0, work->path, -1, wide_path, sizeof(wide_path)) <= 0)
@@ -192,7 +195,7 @@ static void file_read(fs_work_t* work, fs_t* fs)
 
 	if (work->use_compression)
 	{
-		queue_push(fs->compression_queue, work);
+		queue_push(queue, work);
 	}
 	else
 	{
@@ -231,7 +234,7 @@ static void file_write(fs_work_t* work)
 	event_signal(work->done);
 }
 
-static void compress(fs_work_t* work, fs_t* fs) {
+static void compress(fs_work_t* work, queue_t* queue) {
 	int dstCapacity = LZ4_compressBound((int) work->size) + sizeof(UINT64);
 	void* buffer = heap_alloc(work->heap, dstCapacity, 8);
 	UINT64* bufferbegin = buffer;
@@ -244,16 +247,15 @@ static void compress(fs_work_t* work, fs_t* fs) {
 		return;
 	}
 
-	//Store original size and OR first bit
 	*bufferbegin = (UINT64) work->size;
 	work->buffer = (void*) bufferbegin;
 	work->size = destSize + sizeof(UINT64);
-	queue_push(fs->file_queue, work);
+	queue_push(queue, work);
 }
 
 static void decompress(fs_work_t* work) {
 	UINT64 destSize = *((UINT64*)work->buffer);
-	char* buffer = (char*) work->buffer + 0;
+	char* buffer = (char*) work->buffer + sizeof(UINT64);
 	
 	void* decompressed = heap_alloc(work->heap, destSize, 8);
 
@@ -289,7 +291,7 @@ static int file_thread_func(void* user)
 		switch (work->op)
 		{
 		case k_fs_work_op_read:
-			file_read(work, fs);
+			file_read(work, fs->compression_queue);
 			break;
 		case k_fs_work_op_write:
 			file_write(work);
@@ -315,7 +317,7 @@ static int compress_thread_func(void* user) {
 			decompress(work);
 			break;
 		case k_fs_work_op_write:
-			compress(work, fs);
+			compress(work, fs->file_queue);
 			break;
 		}
 	}

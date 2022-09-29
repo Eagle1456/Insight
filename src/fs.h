@@ -27,6 +27,8 @@ fs_work_t* fs_read(fs_t* fs, const char* path, heap_t* heap, bool null_terminate
 
 // Queue a file write.
 // File at the specified path will be written in full.
+// If use_compression is true, compressed memory will be allocated out of the provided heap
+// On fs_work_destroy, this memory will be freed.
 // Returns a work object.
 fs_work_t* fs_write(fs_t* fs, const char* path, const void* buffer, size_t size, bool use_compression);
 
