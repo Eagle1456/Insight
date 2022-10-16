@@ -6,6 +6,7 @@
 #include "fs.h"
 #include "timer.h"
 
+#include <stddef.h>
 
 typedef struct trace_t {
 	heap_t* heap;
@@ -43,7 +44,7 @@ void trace_duration_push(trace_t* trace, const char* name) {
 
 	if (trace->isCapturing) {
 		// Write to JSON
-	}
+}
 }
 
 void trace_duration_pop(trace_t* trace) {
@@ -51,6 +52,6 @@ void trace_duration_pop(trace_t* trace) {
 
 	if (trace->isCapturing) {
 		// Write to JSON
-	}
+}
 	heap_free(trace->heap, name);
 }
