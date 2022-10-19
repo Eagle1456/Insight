@@ -15,6 +15,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+//Each event that the caller calls
 typedef struct trace_event_t {
 	char* name;
 	char type;
@@ -22,6 +23,7 @@ typedef struct trace_event_t {
 	uint64_t nanoseconds;
 } trace_event_t;
 
+//A structure for queues for each thread
 typedef struct thread_queue_t {
 	unsigned int thread_id;
 	char** items;
@@ -40,6 +42,7 @@ typedef struct trace_t {
 	char* path;
 } trace_t;
 
+//Finds or creates a queue for each thread
 thread_queue_t* get_thread_queue(trace_t* trace, unsigned int thread_id) {
 	int current_thread_num = trace->thread_num;
 	for (int i = 0; i < current_thread_num; i++) {
@@ -57,6 +60,7 @@ thread_queue_t* get_thread_queue(trace_t* trace, unsigned int thread_id) {
 	return new_queue;
 }
 
+// Frees all of the queues for threads
 void free_threads(trace_t* trace) {
 	for (int i = 0; i < trace->current_capacity; i++) {
 		trace_event_t* event = *(trace->events + i);
@@ -77,6 +81,7 @@ void free_threads(trace_t* trace) {
 	heap_free(trace->heap, trace->current_threads);
 	heap_free(trace->heap, trace->path);
 }
+
 trace_t* trace_create(heap_t* heap, int event_capacity) {
 	trace_t* trace = heap_alloc(heap, sizeof(trace_t), 8);
 	trace->heap = heap;
@@ -167,10 +172,12 @@ void trace_capture_stop(trace_t* trace) {
 
 		char* string = heap_alloc(trace->heap, 4096, 8);
 		if (i < trace->current_capacity - 1) {
-			sprintf_s(string, 4096, "{\"name\": \"%s\",\"ph\": \"%c\",\"pid\":0,\"tid\":\"%u\",\"ts\":%u},", event->name, event->type, event->thread_id, (unsigned int)event->nanoseconds);
+			sprintf_s(string, 4096, "{\"name\": \"%s\",\"ph\": \"%c\",\"pid\":0,\"tid\":\"%u\",\"ts\":%u},", 
+				event->name, event->type, event->thread_id, (unsigned int)event->nanoseconds);
 		}
 		else {
-			sprintf_s(string, 4096, "{\"name\": \"%s\",\"ph\": \"%c\",\"pid\":0,\"tid\":\"%u\",\"ts\":%u}", event->name, event->type, event->thread_id, (unsigned int)event->nanoseconds);
+			sprintf_s(string, 4096, "{\"name\": \"%s\",\"ph\": \"%c\",\"pid\":0,\"tid\":\"%u\",\"ts\":%u}", 
+				event->name, event->type, event->thread_id, (unsigned int)event->nanoseconds);
 		}
 		size_t new_len = old_len + strlen(string) + 1;
 		char* new_buffer = heap_alloc(trace->heap, new_len, 8);
