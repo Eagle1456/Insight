@@ -43,7 +43,7 @@ typedef struct trace_t {
 thread_queue_t* get_thread_queue(trace_t* trace, unsigned int thread_id) {
 	int current_thread_num = trace->thread_num;
 	for (int i = 0; i < current_thread_num; i++) {
-		if (( * (trace->current_threads + i))->thread_id == thread_id) {
+		if (*(trace->current_threads + i) &&( * (trace->current_threads + i))->thread_id == thread_id) {
 			return *(trace->current_threads + i);
 		}
 	}
@@ -69,8 +69,9 @@ void free_threads(trace_t* trace) {
 		thread_queue_t* thread_q = *(trace->current_threads + i);
 
 		for (int j = 0; j < thread_q->tail_index; j++) {
-			heap_free(trace->heap, *(thread_q->items + i));
+			heap_free(trace->heap, *(thread_q->items + j));
 		}
+		heap_free(trace->heap, thread_q->items);
 		heap_free(trace->heap, thread_q);
 	}
 	heap_free(trace->heap, trace->current_threads);
@@ -190,7 +191,8 @@ void trace_capture_stop(trace_t* trace) {
 	}
 
 	fs_t* fs = fs_create(trace->heap, trace->max_capacity);
-	fs_write(fs, trace->path, string, string_len, false);
+	fs_work_t* work = fs_write(fs, trace->path, string, string_len, false);
+	fs_work_destroy(work);
 	fs_destroy(fs);
 	heap_free(trace->heap, string);
 
