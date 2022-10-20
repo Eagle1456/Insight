@@ -3,10 +3,8 @@
 #include <stdio.h>
 
 #include "trace.h"
-#include "queue.h"
 #include "fs.h"
 #include "timer.h"
-#include "semaphore.h"
 #include "atomic.h"
 #include "debug.h"
 
