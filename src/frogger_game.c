@@ -78,7 +78,7 @@ typedef struct frogger_t
 	bool playerRespawning;
 	ecs_entity_ref_t player_ent;
 	ecs_entity_ref_t camera_ent;
-	ecs_entity_ref_t enemy_ent[3][3];
+	ecs_entity_ref_t enemy_ent[3][5];
 
 	gpu_mesh_info_t cube_mesh;
 	gpu_shader_info_t cube_shader;
@@ -134,7 +134,7 @@ frogger_t* frogger_create(heap_t* heap, fs_t* fs, wm_window_t* window, render_t*
 	load_resources(game);
 	spawn_player(game);
 	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
+		for (int j = 0; j < 4; j++) {
 			spawn_enemy(game, j, i, false);
 		}
 	}
@@ -223,7 +223,7 @@ static void unload_resources(frogger_t* game)
 static void set_enemy(int row, int index, float* zpos, float* ypos, float* scale, float* speed) {
 	switch (row) {
 	case 2:
-		*zpos = 5.0f;
+		*zpos = -6.0f;
 		*scale = 2.0f;
 		*speed = 3.0f;
 		break;
@@ -233,21 +233,27 @@ static void set_enemy(int row, int index, float* zpos, float* ypos, float* scale
 		*speed = 1.0f;
 		break;
 	default:
-		*zpos = -6.0f;
+		*zpos = 5.0f;
 		*scale = 1.5f;
 		*speed = 1.5f;
 	}
 
 	switch (index)
 	{
-	case 2:
-		*ypos = 7.0f;
-		break;
-	case 1:
+	case 4:
 		*ypos = 0.0f;
 		break;
+	case 3:
+		*ypos = -14.0f;
+		break;
+	case 2:
+		*ypos = -7.0f;
+		break;
+	case 1:
+		*ypos = 7.0f;
+		break;
 	default:
-		*ypos = -5.5f;
+		*ypos = 14.0f;
 	}
 }
 
@@ -299,7 +305,7 @@ static void spawn_enemy(frogger_t* game, int index, int row, bool respawn)
 	set_enemy(row, index, &zposition, &yposition, &scale, &speed);
 	
 	if (respawn) {
-		yposition = 16.0f;
+		yposition = 16.8f;
 	}
 
 	transform_comp->transform.translation = (vec3f_t){.x = 0, .y = yposition, .z = zposition};
@@ -383,7 +389,7 @@ static void update_enemies(frogger_t* game)
 
 		float enemy_speed = enemy_comp->speed;
 		float dist = dt * -enemy_speed;
-		if (transform_comp->transform.translation.y < -14.0f)
+		if (transform_comp->transform.translation.y < -16.8f)
 		{
 			int row = enemy_comp->row;
 			int index = enemy_comp->index;
