@@ -8,7 +8,7 @@
 #include "ecs.h"
 #include "heap.h"
 #include "wm.h"
-#include "debug.h"
+#include "collide.h"
 #include "string.h"
 
 typedef struct transform_component_t
@@ -47,15 +47,7 @@ typedef struct name_component_t
 } name_component_t;
 
 typedef struct collider_component_t {
-	float width;
-	float height;
-	float depth;
-	float minY;
-	float minZ;
-	float maxY;
-	float maxZ;
-	float minX;
-	float maxX;
+	collide_t collider;
 } collider_component_t;
 
 typedef struct frogger_t
@@ -81,26 +73,11 @@ typedef struct frogger_t
 	ecs_entity_ref_t enemy_ent[3][5];
 
 	gpu_mesh_info_t cube_mesh;
+	gpu_mesh_info_t rect_mesh;
 	gpu_shader_info_t cube_shader;
 	fs_work_t* vertex_shader_work;
 	fs_work_t* fragment_shader_work;
 } frogger_t;
-
-void SetCollider(collider_component_t* collider, transform_component_t* transform) {
-	float height = transform->transform.scale.z;
-	float width = transform->transform.scale.y;
-	float depth = transform->transform.scale.x;
-
-	collider->height = height;
-	collider->width = width;
-	collider->depth = depth;
-	collider->minY = transform->transform.translation.y - width;
-	collider->minZ = transform->transform.translation.z - height;
-	collider->minX = transform->transform.translation.x - depth;
-	collider->maxY = transform->transform.translation.y + width;
-	collider->maxZ = transform->transform.translation.z + height;
-	collider->maxX = transform->transform.translation.x + depth;
-}
 
 static void load_resources(frogger_t* game);
 static void unload_resources(frogger_t* game);
@@ -181,14 +158,27 @@ static void load_resources(frogger_t* game)
 	static vec3f_t cube_verts[] =
 	{
 		{ -1.0f, -1.0f,  1.0f }, { 0.0f, 1.0f,  1.0f },
-		{  1.0f, -1.0f,  1.0f }, { 1.0f, 0.0f,  1.0f },
-		{  1.0f,  1.0f,  1.0f }, { 1.0f, 1.0f,  0.0f },
-		{ -1.0f,  1.0f,  1.0f }, { 1.0f, 0.0f,  0.0f },
+		{  1.0f, -1.0f,  1.0f }, { 0.0f, 1.0f,  0.0f },
+		{  1.0f,  1.0f,  1.0f }, { 0.0f, 1.0f,  0.0f },
+		{ -1.0f,  1.0f,  1.0f }, { 0.0f, 1.0f,  0.0f },
 		{ -1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f,  0.0f },
-		{  1.0f, -1.0f, -1.0f }, { 0.0f, 0.0f,  1.0f },
-		{  1.0f,  1.0f, -1.0f }, { 1.0f, 1.0f,  1.0f },
-		{ -1.0f,  1.0f, -1.0f }, { 0.0f, 0.0f,  0.0f },
+		{  1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f,  0.0f },
+		{  1.0f,  1.0f, -1.0f }, { 0.0f, 1.0f,  0.0f },
+		{ -1.0f,  1.0f, -1.0f }, { 0.0f, 1.0f,  0.0f },
 	};
+	
+	static vec3f_t rect_verts[] =
+	{
+		{ -1.0f, -1.0f,  1.0f }, { 1.0f, 0.0f,  0.0f },
+		{  1.0f, -1.0f,  1.0f }, { 1.0f, 0.0f,  0.0f },
+		{  1.0f,  1.0f,  1.0f }, { 1.0f, 0.0f,  0.0f },
+		{ -1.0f,  1.0f,  1.0f }, { 1.0f, 0.0f,  0.0f },
+		{ -1.0f, -1.0f, -1.0f }, { 1.0f, 0.0f,  0.0f },
+		{  1.0f, -1.0f, -1.0f }, { 1.0f, 0.0f,  0.0f },
+		{  1.0f,  1.0f, -1.0f }, { 1.0f, 0.0f,  0.0f },
+		{ -1.0f,  1.0f, -1.0f }, { 1.0f, 0.0f,  0.0f },
+	};
+
 	static uint16_t cube_indices[] =
 	{
 		0, 1, 2,
@@ -204,11 +194,21 @@ static void load_resources(frogger_t* game)
 		3, 2, 6,
 		6, 7, 3
 	};
+
 	game->cube_mesh = (gpu_mesh_info_t)
 	{
 		.layout = k_gpu_mesh_layout_tri_p444_c444_i2,
 		.vertex_data = cube_verts,
 		.vertex_data_size = sizeof(cube_verts),
+		.index_data = cube_indices,
+		.index_data_size = sizeof(cube_indices),
+	};
+
+	game->rect_mesh = (gpu_mesh_info_t)
+	{
+		.layout = k_gpu_mesh_layout_tri_p444_c444_i2,
+		.vertex_data = rect_verts,
+		.vertex_data_size = sizeof(rect_verts),
 		.index_data = cube_indices,
 		.index_data_size = sizeof(cube_indices),
 	};
@@ -283,7 +283,7 @@ static void spawn_player(frogger_t* game)
 	model_comp->shader_info = &game->cube_shader;
 
 	collider_component_t* collide_comp = ecs_entity_get_component(game->ecs, game->player_ent, game->collider_type, true);
-	SetCollider(collide_comp, transform_comp);
+	set_collider(&collide_comp->collider, &transform_comp->transform);
 }
 
 static void spawn_enemy(frogger_t* game, int index, int row, bool respawn)
@@ -320,23 +320,13 @@ static void spawn_enemy(frogger_t* game, int index, int row, bool respawn)
 	enemy_comp->speed = speed;
 
 	model_component_t* model_comp = ecs_entity_get_component(game->ecs, game->enemy_ent[row][index], game->model_type, true);
-	model_comp->mesh_info = &game->cube_mesh;
+	model_comp->mesh_info = &game->rect_mesh;
 	model_comp->shader_info = &game->cube_shader;
 
 	collider_component_t* collide_comp = ecs_entity_get_component(game->ecs, game->enemy_ent[row][index], game->collider_type, true);
-	SetCollider(collide_comp, transform_comp);
+	set_collider(&collide_comp->collider, &transform_comp->transform);
 }
 
-static int intersect(collider_component_t* comp1, collider_component_t* comp2) {
-	if (comp1->minY <= comp2->maxY &&
-		comp1->maxY >= comp2->minY &&
-		comp1->minZ <= comp2->maxZ &&
-		comp1->maxZ >= comp2->minZ
-		) {
-		return 1;
-	}
-	return 0;
-}
 
 static void spawn_camera(frogger_t* game)
 {
@@ -364,7 +354,7 @@ static bool collide_check(frogger_t* game, collider_component_t* player_col) {
 		ecs_query_next(game->ecs, &query)) {
 		collider_component_t* enemy_col = ecs_query_get_component(game->ecs, &query, game->collider_type);
 
-		if (intersect(player_col, enemy_col)) {
+		if (intersecting(&player_col->collider, &enemy_col->collider)) {
 			return true;
 		}
 	}
@@ -401,7 +391,7 @@ static void update_enemies(frogger_t* game)
 		transform_identity(&move);
 		move.translation = vec3f_add(move.translation, vec3f_scale(vec3f_right(), dist));
 		transform_multiply(&transform_comp->transform, &move);
-		SetCollider(collide_comp, transform_comp);
+		set_collider(&collide_comp->collider, &transform_comp->transform);
 	}
 }
 
@@ -444,7 +434,7 @@ static void update_players(frogger_t* game)
 			move.translation = vec3f_add(move.translation, vec3f_scale(vec3f_right(), dist));
 		}
 		transform_multiply(&transform_comp->transform, &move);
-		SetCollider(collide_comp, transform_comp);
+		set_collider(&collide_comp->collider, &transform_comp->transform);
 		if (transform_comp->transform.translation.z < end_dist || collide_check(game, collide_comp)) {
 			ecs_entity_remove(game->ecs, ecs_query_get_entity(game->ecs, &query), false);
 			game->playerRespawning = true;
