@@ -1,7 +1,6 @@
 #include "debug.h"
 #include "fs.h"
 #include "heap.h"
-#include "net.h"
 #include "render.h"
 #include "frogger_game.h"
 #include "timer.h"
@@ -19,18 +18,10 @@ int main(int argc, const char* argv[])
 	wm_window_t* window = wm_create(heap);
 	render_t* render = render_create(heap, window);
 
-	int port = 12345;
-	if (argc >= 2)
-	{
-		port = atoi(argv[1]);
-	}
-	//net_t* net = net_create(heap, port);
-
 	frogger_t* game = frogger_create(heap, fs, window, render);
 
 	while (!wm_pump(window))
 	{
-		//net_update(net);
 		frogger_update(game);
 	}
 
@@ -38,8 +29,6 @@ int main(int argc, const char* argv[])
 	render_destroy(render);
 
 	frogger_destroy(game);
-
-	//net_destroy(net);
 	wm_destroy(window);
 	fs_destroy(fs);
 	heap_destroy(heap);

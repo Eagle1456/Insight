@@ -1,7 +1,11 @@
+#include "simple_game.h"
+
+#include "debug.h"
 #include "ecs.h"
 #include "fs.h"
 #include "gpu.h"
 #include "heap.h"
+#include "net.h"
 #include "render.h"
 #include "timer_object.h"
 #include "transform.h"
@@ -62,6 +66,7 @@ typedef struct simple_game_t
 	fs_t* fs;
 	wm_window_t* window;
 	render_t* render;
+	net_t* net;
 
 	timer_object_t* timer;
 
@@ -92,7 +97,7 @@ static void spawn_camera_ortho(simple_game_t* game);
 static void update_players(simple_game_t* game);
 static void draw_models(simple_game_t* game);
 
-simple_game_t* simple_game_create(heap_t* heap, fs_t* fs, wm_window_t* window, render_t* render)
+simple_game_t* simple_game_create(heap_t* heap, fs_t* fs, wm_window_t* window, render_t* render, int argc, const char** argv)
 {
 	simple_game_t* game = heap_alloc(heap, sizeof(simple_game_t), 8);
 	game->heap = heap;
@@ -111,17 +116,30 @@ simple_game_t* simple_game_create(heap_t* heap, fs_t* fs, wm_window_t* window, r
 	game->collider_type = ecs_register_component_type(game->ecs, "collider", sizeof(collider_component_t), _Alignof(collider_component_t));
 	game->enemy_type = ecs_register_component_type(game->ecs, "enemy", sizeof(enemy_component_t), _Alignof(enemy_component_t));
 
+	game->net = net_create(heap, game->ecs);
+	if (argc >= 2)
+	{
+		net_address_t server;
+		if (net_string_to_address(argv[1], &server))
+		{
+			net_connect(game->net, &server);
+		}
+		else
+		{
+			debug_print(k_print_error, "Unable to resolve server address: %s\n", argv[1]);
+		}
+	}
+
 	load_resources(game);
 	spawn_player(game, 0);
-	//spawn_player(game, -1);
-	spawn_enemy(game, 0);
-	spawn_camera_ortho(game);
+	spawn_camera(game);
 
 	return game;
 }
 
 void simple_game_destroy(simple_game_t* game)
 {
+	net_destroy(game->net);
 	ecs_destroy(game->ecs);
 	timer_object_destroy(game->timer);
 	unload_resources(game);
@@ -132,6 +150,7 @@ void simple_game_update(simple_game_t* game)
 {
 	timer_object_update(game->timer);
 	ecs_update(game->ecs);
+	net_update(game->net);
 	update_players(game);
 	draw_models(game);
 	render_push_done(game->render);
@@ -188,8 +207,19 @@ static void load_resources(simple_game_t* game)
 
 static void unload_resources(simple_game_t* game)
 {
+	heap_free(game->heap, fs_work_get_buffer(game->vertex_shader_work));
+	heap_free(game->heap, fs_work_get_buffer(game->fragment_shader_work));
 	fs_work_destroy(game->fragment_shader_work);
 	fs_work_destroy(game->vertex_shader_work);
+}
+
+static void player_net_configure(ecs_t* ecs, ecs_entity_ref_t entity, int type, void* user)
+{
+	simple_game_t* game = user;
+
+	model_component_t* model_comp = ecs_entity_get_component(ecs, entity, game->model_type, true);
+	model_comp->mesh_info = &game->cube_mesh;
+	model_comp->shader_info = &game->cube_shader;
 }
 
 static void spawn_player(simple_game_t* game, int index)
@@ -204,8 +234,6 @@ static void spawn_player(simple_game_t* game, int index)
 
 	transform_component_t* transform_comp = ecs_entity_get_component(game->ecs, game->player_ent, game->transform_type, true);
 	transform_identity(&transform_comp->transform);
-	transform_comp->transform.translation.y = (float) index * 5;
-	
 
 	name_component_t* name_comp = ecs_entity_get_component(game->ecs, game->player_ent, game->name_type, true);
 	strcpy_s(name_comp->name, sizeof(name_comp->name), "player");
@@ -217,53 +245,15 @@ static void spawn_player(simple_game_t* game, int index)
 	model_comp->mesh_info = &game->cube_mesh;
 	model_comp->shader_info = &game->cube_shader;
 
-	collider_component_t* collide_comp = ecs_entity_get_component(game->ecs, game->player_ent, game->collider_type, true);
-	collide_comp->height = transform_comp->transform.scale.z;
-	collide_comp->width = transform_comp->transform.scale.y;
-	collide_comp->depth = transform_comp->transform.scale.x;
-	collide_comp->minY = transform_comp->transform.translation.y - (collide_comp->width);
-	collide_comp->minZ = transform_comp->transform.translation.z - (collide_comp->height);
-	collide_comp->minX = transform_comp->transform.translation.x - (collide_comp->depth);
-	collide_comp->maxY = transform_comp->transform.translation.y + (collide_comp->width);
-	collide_comp->maxZ = transform_comp->transform.translation.z + (collide_comp->height);
-	collide_comp->maxX = transform_comp->transform.translation.x + (collide_comp->depth);
-}
-
-static void spawn_enemy(simple_game_t* game, int index)
-{
-	uint64_t k_player_ent_mask =
+	uint64_t k_player_ent_net_mask =
 		(1ULL << game->transform_type) |
 		(1ULL << game->model_type) |
-		(1ULL << game->enemy_type) |
-		(1ULL << game->name_type) |
-		(1ULL << game->collider_type);
-	game->enemy_ent = ecs_entity_add(game->ecs, k_player_ent_mask);
+		(1ULL << game->name_type);
+	uint64_t k_player_ent_rep_mask =
+		(1ULL << game->transform_type);
+	net_state_register_entity_type(game->net, 0, k_player_ent_net_mask, k_player_ent_rep_mask, player_net_configure, game);
 
-	transform_component_t* transform_comp = ecs_entity_get_component(game->ecs, game->enemy_ent, game->transform_type, true);
-	transform_identity(&transform_comp->transform);
-	transform_comp->transform.translation.y = -4.0f;
-	transform_comp->transform.scale.y = 2.0f;
-
-	name_component_t* name_comp = ecs_entity_get_component(game->ecs, game->enemy_ent, game->name_type, true);
-	strcpy_s(name_comp->name, sizeof(name_comp->name), "enemy");
-
-	enemy_component_t* enemy_comp = ecs_entity_get_component(game->ecs, game->enemy_ent, game->enemy_type, true);
-	enemy_comp->index = index;
-
-	model_component_t* model_comp = ecs_entity_get_component(game->ecs, game->enemy_ent, game->model_type, true);
-	model_comp->mesh_info = &game->cube_mesh;
-	model_comp->shader_info = &game->cube_shader;
-
-	collider_component_t* collide_comp = ecs_entity_get_component(game->ecs, game->enemy_ent, game->collider_type, true);
-	collide_comp->height = transform_comp->transform.scale.z;
-	collide_comp->width = transform_comp->transform.scale.y;
-	collide_comp->depth = transform_comp->transform.scale.x;
-	collide_comp->minY = transform_comp->transform.translation.y - (collide_comp->width);
-	collide_comp->minZ = transform_comp->transform.translation.z - (collide_comp->height);
-	collide_comp->minX = transform_comp->transform.translation.x - (collide_comp->depth);
-	collide_comp->maxY = transform_comp->transform.translation.y + (collide_comp->width);
-	collide_comp->maxZ = transform_comp->transform.translation.z + (collide_comp->height);
-	collide_comp->maxX = transform_comp->transform.translation.x + (collide_comp->depth);
+	net_state_register_entity_instance(game->net, 0, game->player_ent);
 }
 
 static void spawn_camera(simple_game_t* game)
@@ -348,7 +338,7 @@ static void update_players(simple_game_t* game)
 		player_component_t* player_comp = ecs_query_get_component(game->ecs, &query, game->player_type);
 		collider_component_t* collide_comp = ecs_query_get_component(game->ecs, &query, game->collider_type);
 
-		if (player_comp->index && transform_comp->transform.translation.z > 1.0f)
+		if (transform_comp->transform.translation.z > 1.0f)
 		{
 			ecs_entity_remove(game->ecs, ecs_query_get_entity(game->ecs, &query), false);
 		}
