@@ -34,6 +34,34 @@ k_key_map[] =
 	{ .virtual_key = VK_RIGHT, .ga_key = k_key_right, },
 	{ .virtual_key = VK_UP, .ga_key = k_key_up, },
 	{ .virtual_key = VK_DOWN, .ga_key = k_key_down, },
+	{ .virtual_key = 0x41, .ga_key = k_key_a, },
+	{ .virtual_key = 0x42, .ga_key = k_key_b, },
+	{ .virtual_key = 0x43, .ga_key = k_key_c, },
+	{ .virtual_key = 0x44, .ga_key = k_key_d, },
+	{ .virtual_key = 0x45, .ga_key = k_key_e, },
+	{ .virtual_key = 0x46, .ga_key = k_key_f, },
+	{ .virtual_key = 0x47, .ga_key = k_key_g, },
+	{ .virtual_key = 0x48, .ga_key = k_key_h, },
+	{ .virtual_key = 0x49, .ga_key = k_key_i, },
+	{ .virtual_key = 0x4A, .ga_key = k_key_j, },
+	{ .virtual_key = 0x4B, .ga_key = k_key_k, },
+	{ .virtual_key = 0x4C, .ga_key = k_key_l, },
+	{ .virtual_key = 0x4D, .ga_key = k_key_m, },
+	{ .virtual_key = 0x4E, .ga_key = k_key_n, },
+	{ .virtual_key = 0x4F, .ga_key = k_key_o, },
+	{ .virtual_key = 0x50, .ga_key = k_key_p, },
+	{ .virtual_key = 0x51, .ga_key = k_key_q, },
+	{ .virtual_key = 0x52, .ga_key = k_key_r, },
+	{ .virtual_key = 0x53, .ga_key = k_key_s, },
+	{ .virtual_key = 0x54, .ga_key = k_key_t, },
+	{ .virtual_key = 0x55, .ga_key = k_key_u, },
+	{ .virtual_key = 0x56, .ga_key = k_key_v, },
+	{ .virtual_key = 0x57, .ga_key = k_key_w, },
+	{ .virtual_key = 0x58, .ga_key = k_key_x, },
+	{ .virtual_key = 0x59, .ga_key = k_key_y, },
+	{ .virtual_key = 0x5A, .ga_key = k_key_z, },
+	{ .virtual_key = VK_LSHIFT, .ga_key = k_key_lshift, },
+	{ .virtual_key = VK_RSHIFT, .ga_key = k_key_rshift, },
 };
 
 static LRESULT CALLBACK _window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -44,7 +72,7 @@ static LRESULT CALLBACK _window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM
 		switch (uMsg)
 		{
 		case WM_KEYDOWN:
-			for (int i = 0; i < _countof(k_key_map); ++i)
+   			for (int i = 0; i < _countof(k_key_map); ++i)
 			{
 				if (k_key_map[i].virtual_key == wParam)
 				{

@@ -5,6 +5,7 @@
 #include "fs.h"
 #include "timer.h"
 #include "timer_object.h"
+#include "input.h"
 #include "ecs.h"
 #include "heap.h"
 #include "wm.h"
@@ -56,7 +57,7 @@ typedef struct frogger_t
 	fs_t* fs;
 	wm_window_t* window;
 	render_t* render;
-
+	input_t* input;
 	timer_object_t* timer;
 
 	ecs_t* ecs;
@@ -88,7 +89,7 @@ static void update_players(frogger_t* game);
 static void update_enemies(frogger_t* game);
 static void draw_models(frogger_t* game);
 
-frogger_t* frogger_create(heap_t* heap, fs_t* fs, wm_window_t* window, render_t* render)
+frogger_t* frogger_create(heap_t* heap, fs_t* fs, wm_window_t* window, render_t* render, input_t* input)
 {
 	frogger_t* game = heap_alloc(heap, sizeof(frogger_t), 8);
 	game->heap = heap;
@@ -117,6 +118,7 @@ frogger_t* frogger_create(heap_t* heap, fs_t* fs, wm_window_t* window, render_t*
 	}
 	spawn_camera(game);
 
+	game->input = input;
 	return game;
 }
 
@@ -400,7 +402,7 @@ static void update_players(frogger_t* game)
 	float dt = (float)timer_object_get_delta_ms(game->timer) * 0.001f;
 	float end_dist = -8.0f;
 
-	uint32_t key_mask = wm_get_key_mask(game->window);
+	uint32_t key_mask = input_get_key_mask(game->input);
 
 	uint64_t k_query_mask = (1ULL << game->transform_type) | (1ULL << game->player_type) | (1ULL << game->collider_type);
 
@@ -417,19 +419,19 @@ static void update_players(frogger_t* game)
 		float dist = dt * player_speed;
 		transform_t move;
 		transform_identity(&move);
-		if (key_mask & k_key_up)
+		if (key_mask & k_button_up)
 		{
 			move.translation = vec3f_add(move.translation, vec3f_scale(vec3f_up(), -dist));
 		}
-		if (key_mask & k_key_down)
+		if (key_mask & k_button_down)
 		{
 			move.translation = vec3f_add(move.translation, vec3f_scale(vec3f_up(), dist));
 		}
-		if (key_mask & k_key_left)
+		if (key_mask & k_button_left)
 		{
 			move.translation = vec3f_add(move.translation, vec3f_scale(vec3f_right(), -dist));
 		}
-		if (key_mask & k_key_right)
+		if (key_mask & k_button_right)
 		{
 			move.translation = vec3f_add(move.translation, vec3f_scale(vec3f_right(), dist));
 		}

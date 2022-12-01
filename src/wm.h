@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -27,8 +29,35 @@ enum
 	k_key_down = 1 << 1,
 	k_key_left = 1 << 2,
 	k_key_right = 1 << 3,
+	k_key_a = 1 << 4,
+	k_key_b = 1 << 5,
+	k_key_c = 1 << 6,
+	k_key_d = 1 << 7,
+	k_key_e = 1 << 8,
+	k_key_f = 1 << 9,
+	k_key_g = 1 << 10,
+	k_key_h = 1 << 11,
+	k_key_i = 1 << 12,
+	k_key_j = 1 << 13,
+	k_key_k = 1 << 14,
+	k_key_l = 1 << 15,
+	k_key_m = 1 << 16,
+	k_key_n = 1 << 17,
+	k_key_o = 1 << 18,
+	k_key_p = 1 << 19,
+	k_key_q = 1 << 20,
+	k_key_r = 1 << 21,
+	k_key_s = 1 << 22,
+	k_key_t = 1 << 23,
+	k_key_u = 1 << 24,
+	k_key_v = 1 << 25,
+	k_key_w = 1 << 26,
+	k_key_x = 1 << 27,
+	k_key_y = 1 << 28,
+	k_key_z = 1 << 29,
+	k_key_lshift = 1 << 30,
+	k_key_rshift = 1 << 31,
 };
-
 
 // Creates a new window. Must be destroyed with wm_destroy().
 // Returns NULL on failure, otherwise a new window.

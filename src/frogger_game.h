@@ -1,3 +1,4 @@
+#include "input.h"
 
 typedef struct frogger_t frogger_t;
 
@@ -7,7 +8,7 @@ typedef struct render_t render_t;
 typedef struct wm_window_t wm_window_t;
 
 // Create an instance of simple test game.
-frogger_t* frogger_create(heap_t* heap, fs_t* fs, wm_window_t* window, render_t* render);
+frogger_t* frogger_create(heap_t* heap, fs_t* fs, wm_window_t* window, render_t* render, input_t* input);
 
 // Destroy an instance of simple test game.
 void frogger_destroy(frogger_t* game);
