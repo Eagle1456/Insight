@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClCompile Include="atomic.c" />
     <ClCompile Include="collide.c" />
+    <ClCompile Include="controller.c" />
     <ClCompile Include="cpp_test.cpp" />
     <ClCompile Include="debug.c" />
     <ClCompile Include="ecs.c" />
@@ -161,6 +162,7 @@
     <ClCompile Include="fs.c" />
     <ClCompile Include="gpu.c" />
     <ClCompile Include="heap.c" />
+    <ClCompile Include="input.c" />
     <ClCompile Include="lecture7.c" />
     <ClCompile Include="lz4\lz4.c" />
     <ClCompile Include="main.c" />
@@ -184,6 +186,7 @@
   <ItemGroup>
     <ClInclude Include="atomic.h" />
     <ClInclude Include="collide.h" />
+    <ClInclude Include="controller.h" />
     <ClInclude Include="cpp_test.h" />
     <ClInclude Include="debug.h" />
     <ClInclude Include="ecs.h" />
@@ -192,6 +195,7 @@
     <ClInclude Include="fs.h" />
     <ClInclude Include="gpu.h" />
     <ClInclude Include="heap.h" />
+    <ClInclude Include="input.h" />
     <ClInclude Include="lz4\lz4.h" />
     <ClInclude Include="mat4f.h" />
     <ClInclude Include="math.h" />

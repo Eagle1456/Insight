@@ -5,6 +5,12 @@ VisualStudioVersion = 17.3.32825.248
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ga2022", "ga2022.vcxproj", "{D38BAA38-C94D-4328-B058-F5AD4B298122}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{22B49ADE-FA85-4006-82A1-383050FD7A8A}"
+	ProjectSection(SolutionItems) = preProject
+		controller.c = controller.c
+		controller.h = controller.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

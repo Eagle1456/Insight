@@ -28,6 +28,7 @@ enum {
 	k_thumb_right = 1 << 7,
 	k_shoulder_left = 1 << 8,
 	k_shoulder_right = 1 << 9,
+	
 	k_controller_button_down = 1 << 12,
 	k_controller_button_right = 1 << 13,
 	k_controller_button_left = 1 << 14,
@@ -40,6 +41,8 @@ enum {
 	k_RX_negative = 1 << 21,
 	k_RY_positive = 1 << 22,
 	k_RY_negative = 1 << 23,
+	k_LT_pressed = 1 << 24,
+	k_RT_pressed = 1 << 25,
 };
 
 // Create controller structure
@@ -64,3 +67,5 @@ uint32_t controller_get_button_mask(control_t* control, player_type_t player);
 
 // Returns axes on specified controller
 void controller_get_axes(control_t* control, player_type_t player, short* lx, short* ly, short* rx, short* ry);
+
+void controller_get_triggers(control_t* control, player_type_t player, unsigned char* lt, unsigned char* rt);

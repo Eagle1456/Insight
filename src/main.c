@@ -20,18 +20,17 @@ Set of pre-defined control schemes
 */
 input_t* create_input_test(int num, map_t* map, heap_t* heap, wm_window_t* wm) {
 	input_t* input;
-	map = NULL;
 	switch (num) {
 		case 6:
-			map = heap_alloc(heap, sizeof(map), 8);
-			map->input_mappings[0] = k_controller_button_down;
-			map->input_mappings[1] = k_controller_button_right;
+			map = heap_alloc(heap, sizeof(map_t), 8);
+			map->input_mappings[0] = k_RT_pressed;
+			map->input_mappings[1] = k_LT_pressed;
 			map->input_mappings[2] = k_LX_negative;
 			map->input_mappings[3] = k_LX_positive;
 			input = input_create(heap, wm, k_controller_type, map, NULL, false);
 			break;
 		case 5:
-			map = heap_alloc(heap, sizeof(map), 8);
+			map = heap_alloc(heap, sizeof(map_t), 8);
 			map->input_mappings[0] = k_LY_positive;
 			map->input_mappings[1] = k_LY_negative;
 			map->input_mappings[2] = k_LX_negative;
@@ -39,7 +38,7 @@ input_t* create_input_test(int num, map_t* map, heap_t* heap, wm_window_t* wm) {
 			input = input_create(heap, wm, k_controller_type, map, NULL, false);
 			break;
 		case 4:
-			map = heap_alloc(heap, sizeof(map), 8);
+			map = heap_alloc(heap, sizeof(map_t), 8);
 			map->input_mappings[0] = k_controller_button_up;
 			map->input_mappings[1] = k_controller_button_down;
 			map->input_mappings[2] = k_controller_button_left;
@@ -47,7 +46,7 @@ input_t* create_input_test(int num, map_t* map, heap_t* heap, wm_window_t* wm) {
 			input = input_create(heap, wm, k_controller_type, map, NULL, false);
 			break;
 		case 3:
-			map = heap_alloc(heap, sizeof(map), 8);
+			map = heap_alloc(heap, sizeof(map_t), 8);
 			map->input_mappings[0] = k_key_w;
 			map->input_mappings[1] = k_key_s;
 			map->input_mappings[2] = k_key_a;
@@ -83,19 +82,26 @@ int main(int argc, const char* argv[])
 	wm_window_t* window = wm_create(heap);
 	render_t* render = render_create(heap, window);
 	map_t* map = NULL;
-	input_t* input = create_input_test(0, map, heap, window);
+	control_t* controller = controller_create(heap, 1);
+	input_t* input = create_input_test(6, map, heap, window);
 	frogger_t* game = frogger_create(heap, fs, window, render, input);
 	
 	while (!wm_pump(window))
 	{
 		input_pump(input);
 		frogger_update(game);
+		/*controller_pump(controller);
+		unsigned char left;
+		unsigned char right;
+		controller_get_triggers(controller, k_first_player, &left, &right);
+		debug_print(k_print_info, "LT: %d, RT: %d\n", left, right);*/
 	}
 	/* XXX: Shutdown render before the game. Render uses game resources. */
-	if (map) { heap_free(heap, map); }
+	if (map != NULL) { heap_free(heap, map); }
 	render_destroy(render);
 	frogger_destroy(game);
 	input_destroy(input);
+	controller_destroy(controller);
 	wm_destroy(window);
 	fs_destroy(fs);
 	heap_destroy(heap);

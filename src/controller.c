@@ -22,6 +22,8 @@ typedef struct controller_t {
 	short LY_axis;
 	short RX_axis;
 	short RY_axis;
+	unsigned char left_trigger;
+	unsigned char right_trigger;
 } controller_t;
 
 typedef struct control_t {
@@ -84,6 +86,15 @@ void query_controllers(control_t* control, int max_inputs) {
 					controller->button_mask |= k_RY_negative;
 				}
 			}
+
+			controller->left_trigger = gamepad.bLeftTrigger;
+			if (controller->left_trigger) {
+				controller->button_mask |= k_LT_pressed;
+			}
+			controller->right_trigger = gamepad.bRightTrigger;
+			if (controller->right_trigger) {
+				controller->button_mask |= k_RT_pressed;
+			}
 		}
 		else {
 			control->player_mask &= ~(player_array[i]);
@@ -100,6 +111,8 @@ control_t* controller_create(heap_t* heap, int player_num) {
 	for (int i = 0; i < player_num; i++) {
 		control->controllers[i] = heap_alloc(heap, sizeof(controller_t), 8);
 		control->controllers[i]->button_mask = 0;
+		control->controllers[i]->left_trigger = 0;
+		control->controllers[i]->right_trigger = 0;
 	}
 	query_controllers(control, player_num);
 	return control;
@@ -161,6 +174,15 @@ uint32_t controller_pump(control_t* control) {
 							controller->button_mask |= k_RY_negative;
 						}
 					}
+
+					controller->left_trigger = gamepad.bLeftTrigger;
+					if (controller->left_trigger) {
+						controller->button_mask |= k_LT_pressed;
+					}
+					controller->right_trigger = gamepad.bRightTrigger;
+					if (controller->right_trigger) {
+						controller->button_mask |= k_RT_pressed;
+					}
 				}
 			}
 			// Controller disconnected, adjust player_mask and return which index
@@ -210,6 +232,17 @@ void controller_get_axes(control_t* control, player_type_t player, short* lx, sh
 			*ly = controller->LY_axis;
 			*rx = controller->RX_axis;
 			*ry = controller->RY_axis;
+			return;
+		}
+	}
+}
+
+void controller_get_triggers(control_t* control, player_type_t player, unsigned char* lt, unsigned char* rt) {
+	for (int i = 0; i < control->max_player_num; i++) {
+		if (player_array[i] == player) {
+			controller_t* controller = control->controllers[i];
+			*lt = controller->left_trigger;
+			*rt = controller->right_trigger;
 			return;
 		}
 	}
