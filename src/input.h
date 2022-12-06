@@ -13,6 +13,7 @@
 // Input handler
 typedef struct input_t input_t;
 
+// Array for mapping of four values, [up, down, left, right]
 typedef struct map_t {
 	int input_mappings[4];
 }map_t;
@@ -66,4 +67,3 @@ void input_get_axes(input_t* input, int* x, int* y);
 // Get the current input type
 uint32_t get_input_type(input_t* input);
 
-uint32_t bind_map(uint32_t key_bind, map_t map);

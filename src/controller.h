@@ -68,4 +68,5 @@ uint32_t controller_get_button_mask(control_t* control, player_type_t player);
 // Returns axes on specified controller
 void controller_get_axes(control_t* control, player_type_t player, short* lx, short* ly, short* rx, short* ry);
 
+// Returns the value on the left and right trigger
 void controller_get_triggers(control_t* control, player_type_t player, unsigned char* lt, unsigned char* rt);
