@@ -71,14 +71,14 @@ int main(int argc, const char* argv[])
 
 	timer_startup();
 
-	cpp_test_function(42);
+	//cpp_test_function(42);
 
 	heap_t* heap = heap_create(2 * 1024 * 1024);
 	fs_t* fs = fs_create(heap, 8);
 	wm_window_t* window = wm_create(heap);
 	render_t* render = render_create(heap, window);
 	map_t* map = heap_alloc(heap, sizeof(map_t), 8);
-	input_t* input = create_input_test(3, map, heap, window);
+	input_t* input = create_input_test(0, map, heap, window);
 	frogger_t* game = frogger_create(heap, fs, window, render, input);
 	
 	while (!wm_pump(window))

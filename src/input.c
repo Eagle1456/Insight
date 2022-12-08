@@ -32,7 +32,7 @@ const map_t standard_keyboard_map = { {k_key_up, k_key_down, k_key_left, k_key_r
 // Structure for mapping controller keys to input keys
 const map_t standard_controller_map = { {k_dpad_up, k_dpad_down, k_dpad_left, k_dpad_right} };
 
-control_type_t control_type_array[] = { k_keyboard_type, k_controller_type, k_wheel_type };
+control_type_t control_type_array[] = { k_keyboard_type, k_controller_type};
 
 input_t* input_create(heap_t* heap, wm_window_t* window, control_type_t controller_type, map_t* controller_map, map_t* key_map, bool fallthrough) {
 	input_t* input = heap_alloc(heap, sizeof(input_t), 8);
@@ -45,8 +45,9 @@ input_t* input_create(heap_t* heap, wm_window_t* window, control_type_t controll
 	input->fallthrough = fallthrough;
 	input->keyboard_map = key_map;
 	input->controller_map = controller_map;
+	input->last_control_type = controller_type;
 	
-	if (controller_type == k_wheel_type || controller_type == k_controller_type) {
+	if (controller_type == k_controller_type) {
 		input->controller = controller_create(input->heap, 1);
 		input->last_check = timer_ticks_to_ms(timer_get_ticks());
 	}
@@ -54,7 +55,7 @@ input_t* input_create(heap_t* heap, wm_window_t* window, control_type_t controll
 }
 
 void input_destroy(input_t* input) {
-	if (input->type_mask == k_controller_type || input->type_mask == k_wheel_type) {
+	if (input->type_mask == k_controller_type) {
 		controller_destroy(input->controller);
 	}
 	heap_free(input->heap, input);
@@ -84,7 +85,7 @@ void input_pump(input_t* input) {
 	uint32_t key_mask = 0;
 	uint32_t current_controllers;
 	input->key_mask = 0;
-	if (input->type_mask == k_controller_type || input->type_mask == k_wheel_type) {
+	if (input->type_mask == k_controller_type) {
 		controller_check_query(input);
 		controller_pump(input->controller);
 	}
@@ -135,3 +136,6 @@ void input_get_axes(input_t* input, int* x, int* y) {
 	*y = input->y_axis;
 }
 
+uint32_t get_input_type(input_t* input) {
+	return input->last_control_type;
+}

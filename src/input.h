@@ -35,26 +35,26 @@ typedef enum input_button_t {
 typedef enum control_type_t{
 	k_keyboard_type = 1 << 0,
 	k_controller_type = 1 << 1,
-	k_wheel_type = 1 << 2,
 } control_type_t;
 
 // Structure for mapping arrow keys to input keys
 const map_t standard_keyboard_map;
 
-// Structure for mapping controller keys to input keys
+// Structure for mapping controller dpad to input keys
 const map_t standard_controller_map;
 
 // Creates an input_t object
+// 
 // Setting fallthrough to false will mean that input stops if an input is disconnected
 // Setting fallthrough to true will mean that the next available type will be used
-// In this order: k_wheel_type -> k_controller_type -> k_keyboard_type
+// In this order: k_controller_type -> k_keyboard_type
 input_t* input_create(heap_t* heap, wm_window_t* window, control_type_t controller_type, map_t* controller_map, map_t* key_map, bool fallthrough);
 
 // Destroys a previously created input object
 void input_destroy(input_t* input);
 
 // Updates the state of the input
-// If controller_type is k_controller_type or k_wheel_type and fallthrough is true,
+// If controller_type is k_controller_type and fallthrough is true,
 // it checks for controllers over a set interval of time
 void input_pump(input_t* input);
 
